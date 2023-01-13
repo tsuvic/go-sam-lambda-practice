@@ -1,6 +1,6 @@
-# go-sam-lambda-practice
+# ca-geo-corona
 
-This is a sample template for go-sam-lambda-practice - Below is a brief explanation of what we have generated for you:
+This is a sample template for ca-geo-corona - Below is a brief explanation of what we have generated for you:
 
 ```bash
 .

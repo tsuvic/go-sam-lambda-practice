@@ -1,44 +1,195 @@
 AWSTemplateFormatVersion: '2010-09-09'
 Transform: AWS::Serverless-2016-10-31
 Description: >
-  go-sam-lambda-practice
-  
-  Sample SAM Template for go-sam-lambda-practice
+  Sample SAM Template for ca-geo-corona App.  
+Parameters:
+  ENV:
+    Type: String
+  DBHOST:
+    Type: String
+  DBNAME:
+    Type: String
+  DBUSER:
+    Type: String
+  DBPASS: 
+    Type: String
+  WEBHOOK:
+    Type: String
+  TOKEN:
+    Type: String
 
-# More info about Globals: https://github.com/awslabs/serverless-application-model/blob/master/docs/globals.rst
 Globals:
   Function:
-    Timeout: 5
+    Timeout: 900
+    Environment: 
+      Variables:
+        ENV: !Ref ENV
+        DBHOST: !Ref DBHOST
+        DBNAME: !Ref DBNAME
+        DBUSER: !Ref DBUSER
+        DBPASS: !Ref DBPASS
+        WEBHOOK: !Ref WEBHOOK
+        TOKEN: !Ref TOKEN
 
 Resources:
-  HelloWorldFunction:
-    Type: AWS::Serverless::Function # More info about Function Resource: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#awsserverlessfunction
+  # FacilityRegisterAutomaticallyFunction:
+  #   Type: AWS::Serverless::Function 
+  #   Properties:
+  #     Role: arn:aws:iam::880843126767:role/go-academy-lambda
+  #     CodeUri: facility-register-automatically/
+  #     Handler: facility-register-automatically
+  #     Runtime: go1.x
+  #     Architectures:
+  #       - x86_64
+  #     Events:
+  #       CatchAll:
+  #         Type: Api 
+  #         Properties:
+  #           Path: /facility/register/automatically
+  #           Method: GET
+  #           RestApiId: !Ref CaGeoCoronaAPI
+
+  # FacilityRegisterManuallyFunction:
+  #   Type: AWS::Serverless::Function 
+  #   Properties:
+  #     Role: arn:aws:iam::880843126767:role/go-academy-lambda
+  #     CodeUri: facility-register-manually/
+  #     Handler: facility-register-manually
+  #     Runtime: go1.x
+  #     Architectures:
+  #       - x86_64
+  #     Events:
+  #       CatchAll:
+  #         Type: Api 
+  #         Properties:
+  #           Path: /facility/register/manulally
+  #           Method: GET
+  #           RestApiId: !Ref CaGeoCoronaAPI
+
+  # FacilityGetFunction:
+  #     Type: AWS::Serverless::Function 
+  #     Properties:
+  #       Role: arn:aws:iam::880843126767:role/go-academy-lambda
+  #       CodeUri: facility-get/
+  #       Handler: facility-get
+  #       Runtime: go1.x
+  #       Architectures:
+  #         - x86_64
+  #       Events:
+  #         CatchAll:
+  #           Type: Api 
+  #           Properties:
+  #             Path: /facility
+  #             Method: GET
+  #             RestApiId: !Ref CaGeoCoronaAPI
+  #             RequestParameters:
+  #               - method.request.querystring.prefName
+  #               - method.request.querystring.cityName
+
+  #クエリで指定する日付、都道府県のデータをデータベースに登録する
+  InfectionStatusRegisterFunction:
+    Type: AWS::Serverless::Function 
     Properties:
-      CodeUri: hello-world/
-      Handler: hello-world
+      Role: arn:aws:iam::880843126767:role/go-academy-lambda
+      CodeUri: infection-status-register/
+      Handler: infection-status-register
       Runtime: go1.x
       Architectures:
         - x86_64
       Events:
         CatchAll:
-          Type: Api # More info about API Event Source: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#api
+          Type: Api 
           Properties:
-            Path: /hello
+            Path: /infectionStatus/register
             Method: GET
-      Environment: # More info about Env Vars: https://github.com/awslabs/serverless-application-model/blob/master/versions/2016-10-31.md#environment-object
-        Variables:
-          PARAM1: VALUE
+            RestApiId: !Ref CaGeoCoronaAPI
+            RequestParameters:
+              - method.request.querystring.date
+              - method.request.querystring.prefecture
+
+  #日次で昨日の感染者数データを感染対策サイトから取得し、データベースに登録する
+  InfectionStatusRegisterScheduleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: arn:aws:iam::880843126767:role/go-academy-lambda
+      CodeUri: infection-status-register-schedule/
+      Handler: infection-status-register-schedule
+      Runtime: go1.x
+      Events:
+        ScheduleEvent:
+          Type: Schedule
+          Properties:
+            Schedule: cron(30/20 2 * * ? *) 
+  
+  #昨日を起点に1週間遡って、感染者数のデータをデータベースから取得し、画像生成、Slack通知を行う
+  # InfectionStatusNotifyScheduleFunction:
+  #   Type: AWS::Serverless::Function
+  #   Properties:
+  #     Role: arn:aws:iam::880843126767:role/go-academy-lambda
+  #     CodeUri: infection-status-notify/
+  #     Handler: infection-status-notify
+  #     Runtime: go1.x
+  #     Events:
+  #       ScheduleEvent:
+  #         Type: Schedule
+  #         Properties:
+  #           Schedule: cron(30/20 2 * * ? *)
+
+  # (デバッグ用API）
+  InfectionStatusNotifyScheduleFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Role: arn:aws:iam::880843126767:role/go-academy-lambda
+      CodeUri: infection-status-notify/
+      Handler: infection-status-notify
+      Runtime: go1.x
+      Events:
+        CatchAll:
+          Type: Api 
+          Properties:
+            Path: /infectionStatus/notify
+            Method: GET
+            RestApiId: !Ref CaGeoCoronaAPI
+
+  InfectionStatusGetFunction:
+    Type: AWS::Serverless::Function 
+    Properties:
+      Role: arn:aws:iam::880843126767:role/go-academy-lambda
+      CodeUri: infection-status-get/
+      Handler: infection-status-get
+      Runtime: go1.x
+      Architectures:
+        - x86_64
+      Events:
+        CatchAll:
+          Type: Api 
+          Properties:
+            Path: /infectionStatus/{type}
+            Method: GET
+            RestApiId: !Ref CaGeoCoronaAPI
+            RequestParameters:
+              - method.request.path.type
+              - method.request.querystring.date
+              - method.request.querystring.prefecture
+
+
+  CaGeoCoronaAPI:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Cors:
+        AllowMethods: "'GET,POST,OPTIONS'"
+        AllowHeaders: "'content-type'"
+        AllowOrigin: "'*'"
+        AllowCredentials: false
 
 Outputs:
-  # ServerlessRestApi is an implicit API created out of Events key under Serverless::Function
-  # Find out more about other implicit resources you can reference within SAM
-  # https://github.com/awslabs/serverless-application-model/blob/master/docs/internals/generated_resources.rst#api
-  HelloWorldAPI:
-    Description: "API Gateway endpoint URL for Prod environment for First Function"
-    Value: !Sub "https://${ServerlessRestApi}.execute-api.${AWS::Region}.amazonaws.com/Prod/hello/"
-  HelloWorldFunction:
-    Description: "First Lambda Function ARN"
-    Value: !GetAtt HelloWorldFunction.Arn
-  HelloWorldFunctionIamRole:
-    Description: "Implicit IAM Role created for Hello World function"
-    Value: !GetAtt HelloWorldFunctionRole.Arn
+  InfectionStatusRegisterFunction:
+    Description: "Type API"
+    Value: !Sub "https://${CaGeoCoronaAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod/infectionStatus/register/"
+  InfectionStatusRegisterScheduleFunction:
+    Description: "Type Events Schedule"
+    Value: !Sub "https://${CaGeoCoronaAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod//infectionStatus/register/schedule"
+  InfectionStatusGetFunction:
+    Description: "Type API"
+    Value: !Sub "https://${CaGeoCoronaAPI}.execute-api.${AWS::Region}.amazonaws.com/Prod/get"    

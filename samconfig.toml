@@ -1,0 +1,11 @@
+version = 0.1
+[default]
+[default.deploy]
+[default.deploy.parameters]
+stack_name = "XXX"
+s3_bucket = "XXX"
+s3_prefix = "XXX"
+region = "ap-northeast-1"
+profile = "XXX"
+capabilities = "CAPABILITY_IAM"
+image_repositories = []

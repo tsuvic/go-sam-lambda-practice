@@ -1,0 +1,41 @@
+version: '3'
+services:
+  db:
+    image: mysql:8.0.31
+    command: --default-authentication-plugin=mysql_native_password
+    volumes:
+      - ./data:/var/lib/mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: training
+    ports:
+      - 3306:3306
+
+  # https://qiita.com/sachiko-kame/items/a6deebbad207d627b598
+  tool:
+    image: phpmyadmin/phpmyadmin:5
+    depends_on:
+      - db
+    environment:
+      - PMA_ARBITRARY=1
+      - PMA_HOST=db
+      - PMA_USER=root
+      - PMA_PASSWORD=password
+    ports:
+      - 3000:80
+    volumes:
+      - ./docker/phpmyadmin/sessions:/sessions
+
+  # minio:
+  #   image: minio/minio
+  #   volumes:
+  #     - ./.s3-local:/data
+  #   ports:
+  #     - 9000:9000
+  #     - 9001:9001
+  #   environment:
+  #     MINIO_ROOT_USER: root
+  #     MINIO_ROOT_PASSWORD: password1
+  #   command: ['server', '/data', '--console-address', ':9001']
+
+
